@@ -1,0 +1,52 @@
+services:
+  # ── Webhook server ──────────────────────────────────────────────────────────
+  - type: web
+    name: linqsight
+    runtime: python
+    buildCommand: pip install -r requirements.txt && python generate_data.py
+    startCommand: uvicorn webhook:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: LINQ_API_KEY
+        sync: false
+      - key: LINQ_FROM_NUMBER
+        sync: false
+      - key: LINQ_WEBHOOK_SECRET
+        sync: false
+      - key: USER_PHONE_NUMBER
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+  # Daily brief at 8am UTC (adjust offset for your timezone)
+  - type: cron
+    name: linqsight-daily-brief
+    runtime: python
+    schedule: "0 13 * * *"   # 8am ET = 13:00 UTC
+    buildCommand: pip install -r requirements.txt
+    startCommand: python daily_brief.py
+    envVars:
+      - key: LINQ_API_KEY
+        sync: false
+      - key: LINQ_FROM_NUMBER
+        sync: false
+      - key: USER_PHONE_NUMBER
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+  # Anomaly check every hour
+  - type: cron
+    name: linqsight-anomaly-check
+    runtime: python
+    schedule: "0 * * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python anomaly_check.py
+    envVars:
+      - key: LINQ_API_KEY
+        sync: false
+      - key: LINQ_FROM_NUMBER
+        sync: false
+      - key: USER_PHONE_NUMBER
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false

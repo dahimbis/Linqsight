@@ -1,0 +1,10 @@
+.env
+*.db
+__pycache__/
+*.pyc
+.chat_id_*
+*.png
+.venv/
+venv/
+dist/
+*.egg-info/
