@@ -180,12 +180,52 @@ def extract_memory(user_message: str) -> dict | None:
     return None
 
 
-MEMORY_TRIGGERS = [
-    "remember", "our target", "our goal", "our cac", "our mrr",
-    "keep in mind", "note that", "fyi", "heads up",
-]
+INTENT_SYSTEM = """You classify a message from a growth analyst into one of three categories.
+Reply with exactly one word, nothing else:
+
+- data    (asking about metrics, signups, revenue, CAC, activation, experiments, trends, dashboards, reports)
+- memory  (storing a fact like "our CAC target is $40" or "remember that...")
+- chat    (greeting, small talk, off-topic, personal questions, anything not data-related)
+
+Examples:
+"hey" -> chat
+"how did we do yesterday" -> data
+"what's our conversion rate" -> data
+"our CAC target is $40" -> memory
+"how is Katie" -> chat
+"any dashboards" -> chat
+"break that down by channel" -> data
+"thanks" -> chat
+"""
+
+CHAT_SYSTEM = """You are Linqsight, a growth analyst assistant on iMessage.
+The user said something that isn't a data question. Reply naturally in 1 sentence.
+If it's a greeting, say hi back and mention you're ready to dig into growth data.
+If it's off-topic or personal, politely note you're focused on growth metrics.
+No bullet points. No emoji unless they used one. Sound like a real person."""
 
 
-def looks_like_memory(text: str) -> bool:
-    lower = text.lower()
-    return any(t in lower for t in MEMORY_TRIGGERS)
+def classify_intent(text: str) -> str:
+    """Returns 'data', 'memory', or 'chat'."""
+    resp = client.messages.create(
+        model=MODEL,
+        max_tokens=5,
+        system=INTENT_SYSTEM,
+        messages=[{"role": "user", "content": text}],
+    )
+    result = resp.content[0].text.strip().lower()
+    if result in ("data", "memory", "chat"):
+        return result
+    return "data"  # default to data if unclear
+
+
+def handle_chat(text: str, history: list[dict]) -> str:
+    """Reply naturally to greetings and off-topic messages."""
+    messages = history + [{"role": "user", "content": text}]
+    resp = client.messages.create(
+        model=MODEL,
+        max_tokens=100,
+        system=CHAT_SYSTEM,
+        messages=messages,
+    )
+    return resp.content[0].text.strip()
