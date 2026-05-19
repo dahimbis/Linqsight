@@ -40,6 +40,11 @@ def verify_signature(secret: str, timestamp: str, body: bytes, sig: str) -> bool
     return hmac.compare_digest(expected, sig)
 
 
+@app.get("/")
+async def root():
+    return {"name": "Linqsight", "status": "ok"}
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
