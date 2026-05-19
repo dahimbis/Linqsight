@@ -28,11 +28,16 @@ USER_NUMBER = os.environ["USER_PHONE_NUMBER"]
 
 
 def verify_signature(secret: str, timestamp: str, body: bytes, sig: str) -> bool:
-    """HMAC-SHA256 over '{timestamp}.{body}'."""
+    """HMAC-SHA256 over '{timestamp}.{body}' per Linq docs."""
     if not secret:
         return True  # skip in dev if secret not set
-    mac = hmac.new(secret.encode(), f"{timestamp}.".encode() + body, hashlib.sha256)
-    return hmac.compare_digest(mac.hexdigest(), sig)
+    message = f"{timestamp}.{body.decode('utf-8')}"
+    expected = hmac.new(
+        secret.encode("utf-8"),
+        message.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(expected, sig)
 
 
 @app.get("/health")
