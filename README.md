@@ -29,13 +29,13 @@ Text `reset`, `clear`, or `start over` to wipe the conversation history and star
 
 ## How it works
 
-Every inbound text goes through a three-step pipeline:
+Every inbound text goes through three steps:
 
-1. **Intent classification** — Claude decides if the message is a data question, a fact to remember, or casual chat. Greetings get a natural reply. Off-topic questions get a polite redirect. Data questions go to step 2.
-2. **SQL generation** — Claude writes a SQLite query against the schema. Only SELECT queries are allowed.
-3. **Summarisation** — Claude turns the raw results into a 1-2 sentence colleague-voice reply and sends it back via the Linq API.
+1. **Intent check.** Claude reads the message and decides if it is a data question, a fact to store, or just chat. Greetings get a natural reply. Off-topic questions get a short redirect. Data questions move to step 2.
+2. **SQL generation.** Claude writes a SQLite query against the schema. Only SELECT queries run.
+3. **Reply.** Claude turns the query results into a 1-2 sentence text and sends it back via the Linq API.
 
-The daily brief and anomaly checks run as separate cron jobs and text you unprompted.
+The daily brief and anomaly checks run as separate cron jobs and text you without being asked.
 
 ---
 
@@ -90,12 +90,12 @@ python anomaly_check.py   # runs the anomaly check right now
 ### 6. Deploy to Render
 
 1. Push to GitHub
-2. Connect the repo on [render.com](https://render.com), create a Web Service
-3. Set the build command: `pip install -r requirements.txt`
-4. Set the start command: `python generate_data.py; uvicorn webhook:app --host 0.0.0.0 --port $PORT`
+2. Connect the repo on [render.com](https://render.com) and create a Web Service
+3. Build command: `pip install -r requirements.txt`
+4. Start command: `python generate_data.py; uvicorn webhook:app --host 0.0.0.0 --port $PORT`
 5. Add the five environment variables in the Render dashboard
 6. Register your Linq webhook pointing at `https://your-app.onrender.com/webhook?version=2026-02-03`
-7. Copy the `signing_secret` from the registration response into `LINQ_WEBHOOK_SECRET`
+7. Paste the `signing_secret` from the response into `LINQ_WEBHOOK_SECRET`
 
 ---
 
@@ -110,7 +110,6 @@ linqsight/
 ├── claude_client.py   # All Claude interactions (intent, SQL, summarisation, memory)
 ├── linq_client.py     # Linq API wrapper (send messages, typing indicators)
 ├── db.py              # SQLite helpers, schema description, table init
-├── start.sh           # Startup script for Render
 ├── requirements.txt
 ├── render.yaml        # Render deployment config
 └── .env.example
@@ -147,20 +146,20 @@ linqsight/
 
 ## Plugging into real Linq data
 
-The synthetic database mirrors the shape of what Linq already tracks internally. Swapping it out is a one-file change in `db.py` and `generate_data.py`:
+The synthetic database mirrors the shape of what Linq already tracks. Swapping it out means updating `db.py` and `generate_data.py`:
 
-| Synthetic table | Real Linq equivalent |
+| Synthetic table | Real equivalent |
 |---|---|
 | `signups` | New account registrations, attributed by UTM source |
 | `activations` | First meaningful action (first message sent, first integration connected) |
-| `conversions` | Plan upgrades, with MRR from Stripe |
-| `ad_spend` | Google Ads / LinkedIn spend pulled via their APIs or a warehouse |
-| `experiments` | A/B test log from LaunchDarkly, Statsig, or a homegrown table |
+| `conversions` | Plan upgrades with MRR from Stripe |
+| `ad_spend` | Google Ads / LinkedIn spend via their APIs or a warehouse |
+| `experiments` | A/B test log from LaunchDarkly, Statsig, or a custom table |
 
-The Claude prompts and anomaly logic are data-agnostic. They work off the schema description in `db.py`. Update that description and the queries in `daily_brief.py` and `anomaly_check.py`, and Linqsight is running on real data the same day.
+The Claude prompts and anomaly logic are data-agnostic. Update the schema description in `db.py` and the queries in `daily_brief.py` and `anomaly_check.py`, and Linqsight runs on real data the same day.
 
-For a production deployment you would also want:
-- A read replica or warehouse (BigQuery, Snowflake) instead of SQLite
+For production you would also want:
+- A warehouse (BigQuery, Snowflake) instead of SQLite
 - Auth if more than one person is texting the bot
 - A secrets manager instead of environment variables
 
@@ -168,20 +167,13 @@ For a production deployment you would also want:
 
 ## Design choices
 
-**Intent classification before SQL generation**
-Not every message is a data question. Routing greetings and off-topic messages through a separate Claude call first means the bot responds naturally to "hey" instead of trying to write SQL for it. Three intents: data, memory, chat.
+**Check intent before writing SQL.** Not every message is a data question. Classifying first means "hey" gets a normal reply instead of a broken SQL attempt.
 
-**Two-step Claude calls for data questions**
-Separating "what does the data say" from "how do I say it" keeps each prompt focused. The SQL prompt is strict and technical. The summarisation prompt is purely about voice. Mixing them produces worse output on both dimensions.
+**Two Claude calls per data question.** One call writes the SQL, a second call turns the results into a text. Keeping them separate means each prompt stays focused and the output is better on both sides.
 
-**Tables created on startup, not just at build time**
-Render's free tier has an ephemeral filesystem. The database is regenerated every time the server starts via `generate_data.py`, and `db.py` runs `init_db()` on import to ensure the `conversations` and `memories` tables always exist.
+**Regenerate the database on every startup.** Render's free tier wipes the disk on each deploy. Running `generate_data.py` at startup ensures the data is always there, and `db.py` creates the conversation and memory tables on import so nothing is missing.
 
-**Why SQLite**
-Zero infrastructure, ships with Python, and the dataset fits in memory. The query interface is identical to Postgres, so swapping the driver is a one-line change.
-
-**Why not stream Claude's response**
-The typing indicator covers the latency. Streaming adds complexity for a reply that is 1-2 sentences long.
+**SQLite over a hosted database.** No setup, no cost, ships with Python. The queries are standard SQL so switching to Postgres later is a one-line change.
 
 ---
 
