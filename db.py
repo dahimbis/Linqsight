@@ -113,6 +113,12 @@ def get_history(sender: str, limit: int = 8) -> list[dict]:
     return [{"role": r["role"], "content": r["content"]} for r in reversed(rows)]
 
 
+def clear_history(sender: str) -> None:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM conversations WHERE sender = ?", (sender,))
+        conn.commit()
+
+
 def save_memory(key: str, value: str) -> None:
     with get_conn() as conn:
         conn.execute("DELETE FROM memories WHERE key = ?", (key,))

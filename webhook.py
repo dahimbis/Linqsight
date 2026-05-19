@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from db import save_message, get_history, save_memory
+from db import save_message, get_history, save_memory, clear_history
 from claude_client import answer_question, extract_memory, classify_intent, handle_chat
 from linq_client import send_text, start_typing, stop_typing, get_or_create_chat
 
@@ -112,7 +112,11 @@ async def handle_message(sender: str, user_text: str, chat_id: str | None):
         history = get_history(sender, limit=8)
         intent = classify_intent(user_text)
 
-        if intent == "memory":
+        # Reset command clears conversation history
+        if user_text.strip().lower() in ("reset", "clear", "start over", "new conversation"):
+            clear_history(sender)
+            reply = "Fresh start. What do you want to dig into?"
+        elif intent == "memory":
             mem = extract_memory(user_text)
             if mem:
                 save_memory(mem["key"], mem["value"])
