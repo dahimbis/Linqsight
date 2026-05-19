@@ -3,7 +3,6 @@
 __pycache__/
 *.pyc
 .chat_id_*
-*.png
 .venv/
 venv/
 dist/

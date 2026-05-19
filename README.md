@@ -8,6 +8,27 @@ Built on the [Linq API](https://linqapp.com), Claude (Anthropic), FastAPI, and S
 
 ---
 
+## Demo
+
+A live conversation with Linqsight over iMessage.
+
+### 1. Morning check-in
+![Hello](screenshots/01-hello.jpeg)
+
+Brief opens with yesterday's numbers in a single text. Signups, activation, MRR, and ad spend, all in two sentences. Ends with a question that invites a follow-up.
+
+### 2. Digging into the why
+![Why](screenshots/02-why.jpeg)
+
+Asking "why is activation low" surfaces the LinkedIn problem. 33% activation versus 60% everywhere else. Brief flags the gap and asks where users are bouncing.
+
+### 3. What to do next
+![Focus](screenshots/03-focus.jpeg)
+
+Asking what to focus on this week returns a prioritized recommendation, not a list. Fix the LinkedIn activation leak first because the volume is there and the fix is concrete.
+
+---
+
 ## What it does
 
 **1. Daily morning brief (8am)**
