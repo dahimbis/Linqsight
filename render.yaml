@@ -3,8 +3,8 @@ services:
   - type: web
     name: linqsight
     runtime: python
-    buildCommand: pip install -r requirements.txt && python generate_data.py
-    startCommand: uvicorn webhook:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r requirements.txt
+    startCommand: python generate_data.py && uvicorn webhook:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: LINQ_API_KEY
         sync: false

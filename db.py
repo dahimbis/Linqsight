@@ -53,6 +53,29 @@ Today's date: 2026-05-19
 """
 
 
+def init_db():
+    """Create tables that may not exist (conversations, memories)."""
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.executescript("""
+        CREATE TABLE IF NOT EXISTS conversations (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender     TEXT NOT NULL,
+            role       TEXT NOT NULL,
+            content    TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS memories (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            key        TEXT NOT NULL,
+            value      TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        """)
+
+# Run on import so tables always exist
+init_db()
+
+
 @contextmanager
 def get_conn() -> Generator[sqlite3.Connection, None, None]:
     conn = sqlite3.connect(DB_PATH)
