@@ -209,8 +209,6 @@ The system prompts are the most important part of this project. The rules:
 - No bullet points, no headers, no emoji unless the user used one first
 - No corporate phrases
 
-This is the same insight behind Linq Blue: a text from a person feels different from a notification from a system, even when the information is identical.
-
 ---
 
 ## License
